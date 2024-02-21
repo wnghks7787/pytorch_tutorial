@@ -35,3 +35,21 @@ print(z.requires_grad)          # 결과값: False(requires_grad가 False임)
 z = torch.matmul(x, w)+b
 z_det = z.detach()
 print(z_det.requires_grad)      # 결과값: False(requires_grad가 False임)
+
+
+# 연산 그래프에 대한 추가 정보
+## autograd는 데이터나 연산의 기록을 그래프(DAG)에 저장함. 이 그래프를 root에서 leaf로 추적하면 chain rule에 의해 gradient를 계산할 수 있음.
+## Back Prop은 root에서 .backward()가 호출되면 시작한다.
+
+
+# Optinal Reading
+## 출력 함수가 임의의 Tensor가 될 때가 있다. 이 때는 실제 변화도를 계산할 수 없어, Jacobian product를 계산한다.
+inp = torch.eye(4, 5, requires_grad=True)
+out = (inp+1).pow(2).t()
+out.backward(torch.ones_like(out), retain_graph=True)
+print(f"First call\n{inp.grad}")
+out.backward(torch.ones_like(out), retain_graph=True)
+print(f"\nSecond call\n{inp.grad}")
+inp.grad.zero_()
+out.backward(torch.ones_like(out), retain_graph=True)
+print(f"\nCall after zeroing gradients\n{inp.grad}")
