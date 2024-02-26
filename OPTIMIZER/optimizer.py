@@ -13,7 +13,7 @@ training_data = datasets.FashionMNIST(
     transform=ToTensor()
 )
 
-test_data = datasets(
+test_data = datasets.FashionMNIST(
     root="data",
     train=False,
     download=True,
@@ -54,4 +54,66 @@ epochs = 5
 
 
 # Optimization loop
+## 최적화의 각 단계를 epoch라고 부름. epoch는 각각 두개의 파트로 구성.
+## train loop: training dataset을 iterate(반복)하고, 매개변수를 최적점으로 수렴
+## validation/test loop: model 성능 개선 여부를 확인하기 위해 test dataset을 itereate(반복)
+
+
+# Loss function
+## 일반적으로, regression에서는 nn.MSELoss()를 사용한다.
+## 일반적으로, classification에서는 nn.NLLLose()를 사용한다.
+loss_fn = nn.CrossEntropyLoss()
+
+
+# Optimizer
+## model의 오차를 줄이기 위해 parameters를 조정하는 과정.
+## 학습 단계에서의 optimizer 방식
+### 1. optimizer.zero_grad() --> parameters 변화도 재설정
+### 2. loss.backwards() --> 예측 손실 역전
+### 3. optimizer.step() --> parameter 조정.
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+
+
+# 전체 코드
+def train_loop(dataloader, model, loss_fn, optimizer):
+    size = len(dataloader.dataset)
+    for batch, (X, y) in enumerate(dataloader):
+        # prediction, loss 계산
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # back prop
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), (batch + 1) * len(X)
+            print(f"loss: {loss:>7f} [{current:>5d}/{size:>5d}]")
+
+def test_loop(dataloader, model, loss_fn):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    test_loss, correct = 0, 0
+
+    with torch.no_grad():
+        for X, y in dataloader:
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
+    test_loss /= num_batches
+    correct /= size
+    print(f"Test Error: \nAccuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+
+epochs = 10
+for t in range(epochs):
+    print(f"Epoch {t+1}\n--------------------------------")
+    train_loop(train_dataloader, model, loss_fn, optimizer)
+    test_loop(test_dataloader, model, loss_fn)
+print("Done!")
 
